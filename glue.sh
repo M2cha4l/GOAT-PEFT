@@ -1,29 +1,59 @@
 # set it 
-BASE_DIR=xxx #e.g. /home/xxx/GOAT-PEFT
-OUT_DIR=xxx #e.g. /mnt/models/
+BASE_DIR=/Users/m2cha4l/Downloads/GOAT-PEFT #e.g. /home/xxx/GOAT-PEFT
+OUT_DIR=/Users/m2cha4l/Downloads/GOAT-PEFT/results/glue #e.g. /mnt/models/
 cd $BASE_DIR
 
-TOT_CUDA="0,1,2,3,4,5,6,7"
-CUDAs=(${TOT_CUDA//,/ })
-CUDA_NUM=${#CUDAs[@]}
-run_command="CUDA_VISIBLE_DEVICES=$TOT_CUDA torchrun --standalone --nnodes=1 --nproc-per-node=$CUDA_NUM "
+# MacBook 
+CUDA_NUM=1
+run_command="python"
 
 set -xe
-conda activate goat
+
+CONDA_INIT=false
+if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/miniconda3/etc/profile.d/conda.sh"
+    CONDA_INIT=true
+elif [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/anaconda3/etc/profile.d/conda.sh"
+    CONDA_INIT=true
+elif [ -f "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh" ]; then
+    source "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh"
+    CONDA_INIT=true
+fi
+
+# 激活 conda 环境
+if [ "$CONDA_INIT" = true ]; then
+    conda activate goat
+else
+    # 如果 conda 未初始化，尝试直接使用 conda 环境的 python
+    if [ -d "$HOME/miniconda3/envs/goat" ]; then
+        export PATH="$HOME/miniconda3/envs/goat/bin:$PATH"
+        echo "Using conda environment from: $HOME/miniconda3/envs/goat"
+    elif [ -d "$HOME/anaconda3/envs/goat" ]; then
+        export PATH="$HOME/anaconda3/envs/goat/bin:$PATH"
+        echo "Using conda environment from: $HOME/anaconda3/envs/goat"
+    else
+        echo "Warning: Could not find conda environment 'goat'. Using system python."
+        echo "If you have conda installed, run: conda init zsh"
+    fi
+fi
+
 cd $BASE_DIR/goat
 
 MOE() {
 export ETA=1.0
 lora=src.goat
-totalbz=256
+# MacBook memory limited, reduce batch size
+totalbz=32
 model=roberta-large
 # rank=8
 # alpha=16
 rank=32
 alpha=64
-bz=${bz:-32}
+# MacBook single gpu, reduce batch size
+bz=${bz:-8}
 gacc=$(( totalbz / bz / CUDA_NUM ))
-ep=10
+ep=1
 lr=1e-4
 k=${k:-2}
 e=8
@@ -41,7 +71,8 @@ elif [[ "$task" == *"rte"* ]]; then
 else
     lr=1e-4
 fi
-for task in mrpc rte cola sst2 qnli mnli qqp ; do
+# mrpc rte cola sst2 qnli mnli qqp
+for task in mrpc; do
     if [[ "$lora" == *"moe"* ]]; then
         prj=$model-$task-${lora}a${aux}-${k}in${e}-total${totalbz}dp${CUDA_NUM}bz${bz}lr${lr}
     else
@@ -59,8 +90,7 @@ for task in mrpc rte cola sst2 qnli mnli qqp ; do
     fi
     out="$OUT_DIR/$prj"
 
-    eval $run_command \
-        train_nlu.py \
+    $run_command train_nlu.py \
         --lora $lora \
         --task glue-mlm-$task \
         --bz $bz \
@@ -77,7 +107,7 @@ for task in mrpc rte cola sst2 qnli mnli qqp ; do
         --output $out \
         --seed 0 \
         --result $BASE_DIR/goat/results/glue \
-        --git_hash $(git rev-parse --short HEAD) 
+        --git_hash $(git rev-parse --short HEAD 2>/dev/null || echo "unknown") 
 
     lora_dirs+=($prj)
 done

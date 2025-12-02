@@ -1,5 +1,5 @@
 # set it 
-BASE_DIR=xxx
+BASE_DIR=/Users/m2cha4l/Downloads/GOAT-PEFT
 OUT_DIR=xxx
 cd $BASE_DIR/goat
 conda activate goat
@@ -113,6 +113,5 @@ lora_dirs+=($prj)
 done
 
 }
-
 
 Train $lora
