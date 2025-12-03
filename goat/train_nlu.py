@@ -94,13 +94,20 @@ class CustomCallback(TrainerCallback):
         if self.world_size > 1:
             self.test_dataset = split_dataset(test_dataset, self.local_rank, self.world_size)
         self.args = args
+        # Detect device: prefer CUDA, then MPS (for Mac), then CPU
+        if torch.cuda.is_available():
+            self.device = 'cuda'
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            self.device = 'mps'
+        else:
+            self.device = 'cpu'
 
     def on_epoch_end(self, args, state, control, **kwargs):
 
         with torch.inference_mode():
 
             def predict_choices(tokenizer, model, examples):
-                inputs = tokenizer(examples["text"], truncation=True, return_tensors="pt", padding=True).to('cuda')
+                inputs = tokenizer(examples["text"], truncation=True, return_tensors="pt", padding=True).to(self.device)
                 with torch.no_grad():
                     outputs = model(**inputs)
                 predictions = outputs.logits.argmax(-1).cpu().numpy()
@@ -182,12 +189,14 @@ class CustomTrainer(Trainer):
 
 def set_seed(seed):
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     
     os.environ['PYTHONHASHSEED'] = str(seed)
 
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    if torch.cuda.is_available():
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 def get_arguments():
     parser = argparse.ArgumentParser()

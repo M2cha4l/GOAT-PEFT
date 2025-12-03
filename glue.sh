@@ -86,7 +86,7 @@ for task in mrpc; do
     if [[ "$task" == *"rte"* ]]; then
         ep=50
     else
-        ep=10
+        ep=1
     fi
     out="$OUT_DIR/$prj"
 
