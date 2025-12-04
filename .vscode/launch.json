@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug train_nlu.py (Glue MRPC)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/goat/train_nlu.py",
+            "python": "/opt/miniconda3/envs/goat/bin/python",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}/goat",
+            "env": {
+                "ETA": "1.0",
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--lora", "src.goat",
+                "--task", "glue-mlm-mrpc",
+                "--bz", "8",
+                "--model", "roberta-large",
+                "--gacc", "32",
+                "--ep", "5",
+                "--aux_loss_coeff", "0.001",
+                "--experts", "8",
+                "--k", "2",
+                "--lr", "0.0001",
+                "--prj", "debug-roberta-large-mrpc",
+                "--rank", "32",
+                "--alpha", "64",
+                "--output", "${workspaceFolder}/results/glue/debug_run",
+                "--seed", "0",
+                "--result", "${workspaceFolder}/goat/results/glue",
+                "--git_hash", "debug"
+            ]
+        }
+    ]
+}

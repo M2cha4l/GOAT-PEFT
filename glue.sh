@@ -43,8 +43,7 @@ cd $BASE_DIR/goat
 MOE() {
 export ETA=1.0
 lora=src.goat
-# MacBook memory limited, reduce batch size
-totalbz=32
+totalbz=256
 model=roberta-large
 # rank=8
 # alpha=16
@@ -53,7 +52,7 @@ alpha=64
 # MacBook single gpu, reduce batch size
 bz=${bz:-8}
 gacc=$(( totalbz / bz / CUDA_NUM ))
-ep=1
+ep=5
 lr=1e-4
 k=${k:-2}
 e=8
@@ -86,7 +85,7 @@ for task in mrpc; do
     if [[ "$task" == *"rte"* ]]; then
         ep=50
     else
-        ep=1
+        ep=5
     fi
     out="$OUT_DIR/$prj"
 

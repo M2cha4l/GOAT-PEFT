@@ -185,6 +185,12 @@ class GOATLayer(BaseTunerLayer, ABC):
                     Vr = torch.cat(V_piece, dim=1)
                     Sr = torch.cat(S_piece)
                     Uhr = torch.cat(U_piece, dim=0)
+
+                    if "goat" in init_type:
+                        S_sums = [s.sum().item() for s in S_piece]
+                        base_scaling = self.scaling[adapter_name][0]
+                        self.scaling[adapter_name] = [base_scaling * math.sqrt(S_sums[0] / (s + 1e-8)) for s in S_sums]
+
                     Sr /= scaling * rho
                 elif init_type == "goat_mini":
                     Vlen = V.shape[-1]//num_experts
